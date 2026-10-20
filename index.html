@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wedding Invitation</title>
+<meta name="theme-color" content="#E9E8E1">
+<meta property="og:title" content="Wedding Invitation">
+<meta property="og:image" content="cover.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#E9E8E1;color:#2B1B1D;font-family:"Cormorant Garamond",Georgia,serif;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+
+/* ===== Canva website (sits behind the cover) ===== */
+#site{position:fixed;inset:0;width:100%;height:100%;border:0;background:#E9E8E1;z-index:1}
+
+/* ===== COVER (your image, full screen) ===== */
+#cover{position:fixed;inset:0;z-index:100;background:var(--coverBg,#fff);overflow:hidden;cursor:pointer;transition:opacity .9s ease .8s}
+#cover.go{opacity:0;pointer-events:none}
+#art{position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.55,0,.2,1);will-change:transform}
+#cover.go #art{transform:scale(2.6)}
+#coverImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:drop-shadow(0 12px 16px rgba(0,0,0,.2))}
+
+/* "Dear + name" text written on top of the cover */
+#dear{position:absolute;left:50%;transform:translate(-50%,-50%);width:88vw;text-align:center;color:var(--dearColor,#6E1423);transition:opacity .5s ease;visibility:hidden}
+#dear small{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:.06em;line-height:1.2}
+#dear b{display:block;font-family:"Pinyon Script","Snell Roundhand",cursive;font-weight:400;line-height:1.15;overflow-wrap:anywhere}
+#cover.go #dear,#cover.go #ring{opacity:0}
+
+/* tap hint: soft ring on the seal (no text) */
+#ring{position:absolute;border-radius:50%;border:2px solid rgba(110,20,35,.6);box-shadow:0 0 0 1px rgba(255,255,255,.7),0 0 12px rgba(255,255,255,.7);transform:translate(-50%,-50%);pointer-events:none;animation:ring 2.2s ease-out infinite;transition:opacity .4s;visibility:hidden}
+@keyframes ring{0%{transform:translate(-50%,-50%) scale(.85);opacity:.9}100%{transform:translate(-50%,-50%) scale(1.35);opacity:0}}
+
+/* ===== screen behind the cover (shown in the first tab after Canva opens in a new tab) ===== */
+#after{position:fixed;inset:0;z-index:90;background:var(--coverBg,#fff);display:none;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem}
+#after.show{display:flex}
+#after p{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.15rem;color:#6a5558;max-width:20rem}
+#goBtn{border:0;cursor:pointer;background:#6E1423;color:#F4F2EC;font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;font-size:1.15rem;padding:.9rem 2.2rem;border-radius:999px;box-shadow:0 6px 18px rgba(74,14,25,.28);text-decoration:none;display:inline-block}
+#goBtn:active{background:#4A0E19}
+#goBtn:focus-visible{outline:2px solid #6E1423;outline-offset:3px}
+
+/* ===== FLOATING BUTTONS (speaker + open in browser) ===== */
+#fab{position:fixed;z-index:200;display:flex;flex-direction:column;gap:.5rem;opacity:0;pointer-events:none;transition:opacity .8s;
+  --gap:max(.7rem,env(safe-area-inset-top));--side:.7rem}
+#fab.show{opacity:1;pointer-events:auto}
+#fab[data-pos="top-right"]{top:var(--gap);right:var(--side)}
+#fab[data-pos="top-left"]{top:var(--gap);left:var(--side)}
+#fab[data-pos="bottom-right"]{bottom:max(.9rem,env(safe-area-inset-bottom));right:var(--side);flex-direction:column-reverse}
+#fab[data-pos="bottom-left"]{bottom:max(.9rem,env(safe-area-inset-bottom));left:var(--side);flex-direction:column-reverse}
+.fb{
+  width:var(--fab,36px);height:var(--fab,36px);border-radius:50%;border:1px solid rgba(110,20,35,.3);
+  background:rgba(244,242,236,.82);color:#6E1423;display:grid;place-items:center;cursor:pointer;text-decoration:none;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(0,0,0,.18);
+}
+.fb svg{width:55%;height:55%}
+.fb:focus-visible{outline:2px solid #6E1423;outline-offset:2px}
+#spk .waves{opacity:0;transition:opacity .2s} #spk.on .waves{opacity:1}
+#spk .slash{opacity:1} #spk.on .slash{opacity:0}
+#openBtn{display:none}
+#fab.hasopen #openBtn{display:grid}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
+}
+</style>
+</head>
+<body>
+
+<audio id="music" loop preload="auto"></audio>
+
+<!-- Canva website -->
+<iframe id="site" title="Wedding invitation" allow="autoplay; fullscreen; clipboard-write" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
+
+<!-- Floating buttons -->
+<div id="fab" aria-label="Controls">
+  <button class="fb" id="spk" type="button" aria-label="Music on/off" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z"/>
+      <g class="waves"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></g>
+      <path class="slash" d="M16 9l5 6M21 9l-5 6"/>
+    </svg>
+  </button>
+  <a class="fb" id="openBtn" href="#" target="_blank" rel="noopener" aria-label="Open in browser" title="Open in browser">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
+  </a>
+</div>
+
+<!-- Screen shown after Canva opens in a new tab -->
+<div id="after">
+  <p id="afterText"></p>
+  <a id="goBtn" href="#" target="_blank" rel="noopener"></a>
+</div>
+
+<!-- Cover: your image + "Dear" text -->
+<div id="cover" role="button" tabindex="0" aria-label="Tap to open the invitation">
+  <div id="art"><img id="coverImg" alt=""></div>
+  <div id="dear"><small id="dearWord">Dear</small><b id="guestName">Guest</b></div>
+  <div id="ring"></div>
+</div>
+
+<script>
+/* =====================================================
+   HOW TO EDIT  (you only need to change the lines inside CONFIG below)
+
+   1. canvaLink     -> your Canva website address (keep the quotation marks).
+   2. cover / music -> file names. Replace cover.webp and music.mp3 in the
+                       folder with your own files (same names), or change the
+                       names here.
+   3. dear          -> the word written before the guest name.
+                       Examples:  "Dear"   "Dearest"   "To"   "Hello"
+                       Use ""  (empty quotes) to hide it and show only the name.
+   4. defaultGuest  -> the name shown when the link has no ?to=
+                       Example link:  yoursite.netlify.app/?to=John%20Smith
+                       (write spaces as %20)
+   5. dearColor     -> text colour, e.g. "#6E1423" (burgundy) or "#000000" (black).
+   6. dearY         -> how high the text sits: 0 = very top, 1 = very bottom.
+   7. BACKGROUND    -> coverBg      = a colour, e.g. "#6E1423" or "#F1E6DC".
+                       coverBgImage = a picture file, e.g. "background.jpg"
+                       (put the file in the folder; leave "" for no picture).
+                       NOTE: the cover image must have a TRANSPARENT background
+                       (PNG or WebP). A JPG always keeps its own background.
+                       If you use a dark background, also change dearColor
+                       to a light colour, e.g. "#F4E9D8".
+   8. Save the file, then upload the whole folder to Netlify again.
+   ===================================================== */
+/* =====================================================
+   SETTINGS — only edit this block
+   ===================================================== */
+const CONFIG = {
+  canvaLink: "https://lingkaran-isna-suryaniii.my.canva.site/theme-3",   // your Canva website link
+
+  cover: "cover.webp",         // your cover image with TRANSPARENT background (PNG or WebP, 1080 x 1920 or similar)
+  music: "music.mp3",          // plays automatically when the cover is tapped
+  coverBg: "#FFFFFF",          // background colour, e.g. "#6E1423"
+  coverBgImage: "",            // background picture, e.g. "background.jpg" ("" = none)
+
+  // --- "Dear + name" written on top of the cover ---
+  dear: "Dear",                // word before the guest name: "Dear", "Dearest", "To"... ("" = hide it)
+  defaultGuest: "Guest",       // used when the link has no ?to=
+  dearColor: "#6E1423",        // text colour
+  dearY: 0.22,                 // vertical position on the cover: 0 = very top, 1 = very bottom (0.15 = near the top)
+
+  // --- tap hint: soft ring on the wax seal (no text) ---
+  showTapCue: true,
+  sealX: 0.534,                // seal centre on the cover image: 0 = left edge, 1 = right edge
+  sealY: 0.595,                 // seal centre on the cover image: 0 = top edge, 1 = bottom edge
+  sealSize: 0.22,              // ring size (fraction of the image width)
+
+  speakerPosition: "top-right",   // top-right | top-left | bottom-right | bottom-left
+  speakerSize: 36,                // px
+  showOpenButton: true,           // small "open in browser" button under the speaker (backup if the site doesn't show)
+
+  // "newtab"   = Canva opens in a NEW TAB, the music keeps playing in this tab (recommended, works with every Canva link)
+  // "embed"    = Canva shows inside this page (Canva often blocks this -> blank screen)
+  // "redirect" = jumps to the Canva site in the same tab (works, but the music stops)
+  mode: "newtab",
+  openDelay: 300,                        // ms between the tap and the new tab (300 = like the TikTok tutorial, 0 = instantly, bigger = lets the zoom play first)
+  openText: "Open invitation",           // button shown if the new tab was blocked
+  afterText: "Your invitation is open in another tab."
+};
+
+/* ===== setup ===== */
+const $ = id => document.getElementById(id);
+const music = $("music"), cover = $("cover"), site = $("site"), fab = $("fab"), spk = $("spk");
+const img = $("coverImg"), dear = $("dear"), ring = $("ring"), art = $("art");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+cover.style.setProperty("--coverBg", CONFIG.coverBg);
+document.getElementById("after").style.setProperty("--coverBg", CONFIG.coverBg);
+if (CONFIG.coverBgImage){
+  const bgcss = "url('" + CONFIG.coverBgImage + "') center/cover no-repeat";
+  cover.style.background = bgcss + ", " + CONFIG.coverBg;
+  document.getElementById("after").style.background = bgcss + ", " + CONFIG.coverBg;
+}
+cover.style.setProperty("--dearColor", CONFIG.dearColor);
+img.src = CONFIG.cover;
+music.src = CONFIG.music;
+$("dearWord").textContent = CONFIG.dear;
+if (!CONFIG.dear.trim()) $("dearWord").style.display = "none";          // empty "dear" = show only the name
+document.title = "Wedding Invitation";
+
+/* guest name from link:  index.html?to=John%20Smith */
+const guest = (new URLSearchParams(location.search).get("to") || "").trim().slice(0, 60);
+$("guestName").textContent = guest || CONFIG.defaultGuest;           // textContent = safe
+
+/* place "Dear + name" and the tap ring relative to the cover image (follows the image on every screen size) */
+function layout(){
+  const iw = img.naturalWidth || 1080, ih = img.naturalHeight || 1920;
+  const vw = innerWidth, vh = innerHeight;
+  const s = Math.max(vw / iw, vh / ih), dw = iw * s, dh = ih * s;     // same math as object-fit: cover
+  const ox = (vw - dw) / 2, oy = (vh - dh) / 2;
+  dear.style.top = (oy + CONFIG.dearY * dh) + "px";
+  dear.querySelector("b").style.fontSize = Math.max(30, Math.min(dw * 0.1, 54)) + "px";
+  dear.querySelector("small").style.fontSize = Math.max(16, Math.min(dw * 0.042, 22)) + "px";
+  const sx = ox + CONFIG.sealX * dw, sy = oy + CONFIG.sealY * dh;
+  art.style.transformOrigin = sx + "px " + sy + "px";                 // zoom goes into the seal
+  Object.assign(ring.style, {left: sx + "px", top: sy + "px", width: CONFIG.sealSize * dw + "px", height: CONFIG.sealSize * dw + "px"});
+  dear.style.visibility = "visible";
+  ring.style.visibility = CONFIG.showTapCue ? "visible" : "hidden";
+}
+img.addEventListener("load", layout);
+img.addEventListener("error", layout);
+addEventListener("resize", layout);
+if (img.complete) layout();
+
+/* floating buttons */
+fab.dataset.pos = CONFIG.speakerPosition;
+fab.style.setProperty("--fab", CONFIG.speakerSize + "px");
+if (CONFIG.showOpenButton && CONFIG.mode === "embed") fab.classList.add("hasopen");
+
+/* canva link (adds https:// if you forgot) */
+function fixUrl(u){ u = (u || "").trim(); return !u ? "" : (/^https?:\/\//i.test(u) ? u : "https://" + u); }
+const canvaUrl = fixUrl(CONFIG.canvaLink);
+const canvaReady = !!canvaUrl;                           // false only if canvaLink is empty
+$("openBtn").href = canvaUrl || "#";
+
+/* music + speaker */
+let playing = false;
+function render(){ spk.classList.toggle("on", playing); spk.setAttribute("aria-pressed", playing); }
+function playMusic(){
+  const p = music.play();
+  if (p && p.then) p.then(() => { playing = true; render(); }).catch(() => { playing = false; render(); });
+  else { playing = true; render(); }
+}
+spk.addEventListener("click", () => { if (playing){ music.pause(); playing = false; render(); } else playMusic(); });
+
+/* ===== ONE TAP: zoom into the seal -> Canva site ===== */
+let started = false;
+function start(){
+  if (started) return; started = true;
+  playMusic();                                            // the tap lets the browser play sound
+  if (CONFIG.mode === "embed" && canvaReady){ site.hidden = false; site.src = canvaUrl; }
+
+  if (CONFIG.mode === "newtab" && canvaReady){
+    cover.classList.add("go");                           // zoom starts right away
+    $("goBtn").href = canvaUrl; $("goBtn").textContent = CONFIG.openText;
+    setTimeout(() => fab.classList.add("show"), reduce ? 0 : 900);
+    const doOpen = () => {
+      const w = window.open(canvaUrl, "_blank");         // new tab; music keeps playing in this tab
+      $("afterText").textContent = w ? CONFIG.afterText : "";   // if the browser blocked it, the button below opens it
+    };
+    if (CONFIG.openDelay > 0 && !reduce) setTimeout(doOpen, CONFIG.openDelay); else doOpen();
+    setTimeout(() => { $("after").classList.add("show"); cover.style.display = "none"; }, reduce ? 0 : 2000);
+    return;
+  }
+  if (CONFIG.mode === "redirect" && canvaReady){
+    cover.classList.add("go");
+    setTimeout(() => { location.href = canvaUrl; }, reduce ? 0 : 1500);
+    return;
+  }
+  cover.classList.add("go");                              // cover zooms in and fades out, the site is right behind it
+  setTimeout(() => fab.classList.add("show"), reduce ? 0 : 900);
+  setTimeout(() => {
+    cover.style.display = "none";
+    if (!canvaReady) document.body.insertAdjacentHTML("beforeend",
+      '<p style="position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:2rem;font-size:1.3rem;color:#6E1423">Canva link not set yet.<br>Open index.html and edit canvaLink in CONFIG.</p>');
+  }, reduce ? 50 : 1900);
+}
+cover.addEventListener("click", start);
+cover.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); start(); } });
+</script>
+</body>
+</html>
